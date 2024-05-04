@@ -117,6 +117,8 @@ epsilon = 0.1
 player_score = 0
 ai_score = 0
 
+max_score = int(text_input("Enter the maximum score to win: "))
+
 running = True
 while running:
     for event in pygame.event.get():
@@ -151,6 +153,9 @@ while running:
     elif ball.rect.right >= WIDTH:
         player_score += 1
         ball.reset()
+
+    if player_score >= max_score or ai_score >= max_score:
+        running = False
 
     screen.blit(background_image, (0, 0))
 
