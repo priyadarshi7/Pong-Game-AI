@@ -1,4 +1,4 @@
 Run the Python file.
 Use your keyboards to enter the username.
-eNTER THE MAX SCORE AFTER WHICH THE GAME ENDS.
+ENTER THE MAX SCORE AFTER WHICH THE GAME ENDS.
 Play the AI Pong Game WITH SCORING SYSTEM.
