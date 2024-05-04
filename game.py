@@ -18,6 +18,7 @@ FONT_SIZE = 36
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Pong")
 
+
 background_image = pygame.image.load("background.png").convert()
 background_image = pygame.transform.scale(background_image, (WIDTH, HEIGHT))
 
@@ -50,7 +51,6 @@ class Paddle:
 
     def move(self, direction):
         self.rect.y += direction * PADDLE_SPEED
-   
         self.rect.y = min(max(self.rect.y, 0), HEIGHT - PADDLE_HEIGHT)
 
     def draw(self):
@@ -76,10 +76,43 @@ class Ball:
     def draw(self):
         pygame.draw.ellipse(screen, WHITE, self.rect)
 
+def get_state(ball_x, ball_y, paddle_y):
+    if ball_x > WIDTH / 2:
+        if ball_y < paddle_y:
+            return 0  
+        elif ball_y > paddle_y + PADDLE_HEIGHT:
+            return 1  
+        else:
+            return 2  
+    else:
+        return 0  
+
+def choose_action(state):
+    if np.random.rand() < epsilon:
+        return random.choice(range(num_actions))  
+    else:
+        return np.argmax(q_table[state])
+
+def update_q_table(state, action, reward, next_state):
+    q_value = q_table[state][action]
+    max_next_q_value = np.max(q_table[next_state])
+    new_q_value = q_value + learning_rate * (reward + discount_factor * max_next_q_value - q_value)
+    q_table[state][action] = new_q_value
+
+
+username = text_input("Enter your username: ")
+
 player_paddle = Paddle(WIDTH - PADDLE_WIDTH - 10, HEIGHT // 2 - PADDLE_HEIGHT // 2)
 ai_paddle = Paddle(10, HEIGHT // 2 - PADDLE_HEIGHT // 2)
 ball = Ball()
-username = text_input("Enter your username: ")
+
+
+num_states = 3  
+num_actions = 2  
+q_table = np.zeros((num_states, num_actions))  
+learning_rate = 0.1
+discount_factor = 0.9
+epsilon = 0.1
 
 player_score = 0
 ai_score = 0
@@ -90,23 +123,27 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
+
     keys = pygame.key.get_pressed()
     if keys[pygame.K_UP]:
         player_paddle.move(-1)
     if keys[pygame.K_DOWN]:
         player_paddle.move(1)
 
-    if ball.speed[0] < 0:
-        if random.random() < 0.7:
-            if ball.rect.centery < ai_paddle.rect.centery:
-                ai_paddle.move(-1)
-            elif ball.rect.centery > ai_paddle.rect.centery:
-                ai_paddle.move(1)
-
-    elif random.random() < 0.3:
-        ai_paddle.move(random.choice([-1, 1]))
+    state = get_state(ball.rect.x, ball.rect.y, ai_paddle.rect.y)
+    action = choose_action(state)
+    if action == 0:
+        if ball.rect.centery < ai_paddle.rect.centery + PADDLE_HEIGHT / 2:
+            ai_paddle.move(-1)
+        else:
+            ai_paddle.move(1)
 
     ball.move()
+
+    if ball.rect.colliderect(player_paddle.rect):
+        ball.speed[0] *= -1
+    elif ball.rect.colliderect(ai_paddle.rect):
+        ball.speed[0] *= -1
 
     if ball.rect.left <= 0:
         ai_score += 1
@@ -115,26 +152,26 @@ while running:
         player_score += 1
         ball.reset()
 
-    if ball.rect.colliderect(player_paddle.rect):
-        ball.speed[0] *= -1
-    elif ball.rect.colliderect(ai_paddle.rect):
-        ball.speed[0] *= -1
-
     screen.blit(background_image, (0, 0))
 
     player_paddle.draw()
     ai_paddle.draw()
     ball.draw()
 
-    player_text = font.render(username + ": " + str(ai_score), True, WHITE)
-    player_text_rect = player_text.get_rect(topright=(WIDTH - 20, 20))
-    screen.blit(player_text, player_text_rect)
+    username_text = font.render(username, True, WHITE)
+    username_rect = username_text.get_rect(center=(WIDTH // 2, 20))
+    screen.blit(username_text, username_rect)
 
-    ai_text = font.render("AI: " + str(player_score), True, WHITE)
-    ai_text_rect = ai_text.get_rect(topleft=(20, 20))
-    screen.blit(ai_text, ai_text_rect)
+    player_score_text = font.render(username + ":"+ str(ai_score), True, WHITE)
+    player_score_rect = player_score_text.get_rect(topright=(WIDTH - 20, 20))
+    screen.blit(player_score_text, player_score_rect)
+
+    ai_score_text = font.render("AI: " + str(player_score), True, WHITE)
+    ai_score_rect = ai_score_text.get_rect(topleft=(20, 20))
+    screen.blit(ai_score_text, ai_score_rect)
 
     pygame.display.flip()
+
     pygame.time.Clock().tick(60)
 
 pygame.quit()
